@@ -1,3 +1,30 @@
+## 2026-03-15 02:00
+
+### group_snapshot_repo_clarification_for_vitalscope_split
+- dialogue_id: `dlg_202603150200_openai_vitalscope_rename_and_repo_reset`
+- task_group: `group_snapshot_repo_clarification_for_vitalscope_split`
+- changed_paths:
+  - `D+20260314+goat/micro-mirror-deploy/README.md`
+  - `D+20260314+goat/micro-mirror-deploy/docs/repo_deploy_workflow_2026.md`
+  - `D+20260314+goat/micro-mirror-deploy/docs/reportRef_micro_mirror.md`
+  - `D+20260314+goat/micro-mirror-deploy/docs/result_micro_mirror.md`
+  - `D+20260314+goat/micro-mirror-deploy/docs/agent_logs_micro_mirror.md`
+- decision:
+  - 将 deploy 仓库明确成 `March 14, 2026` Shenzhen hackathon snapshot
+  - 将长期主仓库链接切换为 `vitalscope`
+  - 将团队信息、参赛信息与结果独立写清楚
+- verification:
+  - `sed -n '1,220p' README.md`
+  - `sed -n '1,220p' docs/result_micro_mirror.md`
+  - `git push origin main`
+  - 结果:
+    - 快照 README 已包含团队、时间、地点、结果
+    - deploy 仓库已推送到 `97e48aa`
+- actual_ccr_model_usage:
+  - 主侧实现与推送: `Codex / GPT-5`
+- next_tasks:
+  - 若 Vercel 后续切主仓库，可把本仓库明确标记为只读快照
+
 ## 2026-03-15 01:25
 
 ### group_repo_positioning_push_verification
