@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>衰老检测 · 用户采样</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #f0f4f8;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+.phone-wrap {
+  width: 390px; background: #f0f4f8; border-radius: 16px;
+  padding: 12px; box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+}
+.card {
+  background: #fff; border-radius: 12px;
+  overflow: hidden; border: 0.5px solid #d1dae6;
+}
+
+/* ── Topbar ── */
+.topbar {
+  padding: 14px 16px 12px; border-bottom: 0.5px solid #e8edf3;
+  display: flex; align-items: center; gap: 10px;
+}
+.back-btn {
+  width: 28px; height: 28px; border-radius: 8px;
+  border: 0.5px solid #d1dae6; background: #f7f9fc;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; color: #4a5c6e; flex-shrink: 0;
+  transition: background 0.15s; user-select: none;
+}
+.back-btn:hover { background: #e8edf3; }
+.topbar-title { font-size: 15px; font-weight: 500; color: #1a2a3a; flex: 1; }
+.topbar-step { font-size: 12px; color: #9aaabb; }
+
+/* ── Step indicator ── */
+.step-nav {
+  display: flex; align-items: flex-start; padding: 14px 16px 0;
+}
+.snav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
+.snav-dot {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 1.5px solid #d1dae6; background: #f7f9fc;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: #9aaabb; font-weight: 500; transition: all 0.25s;
+}
+.snav-dot.active { border-color: #2563eb; background: #2563eb; color: #fff; }
+.snav-dot.done   { border-color: #1a8a5a; background: #1a8a5a; color: #fff; }
+.snav-label { font-size: 10px; color: #9aaabb; white-space: nowrap; transition: color 0.25s; }
+.snav-label.active { color: #2563eb; font-weight: 500; }
+.snav-label.done   { color: #1a8a5a; }
+.snav-line {
+  flex: 1; height: 1.5px; background: #e8edf3;
+  margin: 11px 4px 0; transition: background 0.3s;
+}
+.snav-line.done { background: #1a8a5a; }
+
+/* ── Progress bar ── */
+.prog-wrap { padding: 10px 16px 0; }
+.prog-track { height: 3px; background: #e8edf3; border-radius: 4px; margin-bottom: 14px; }
+.prog-fill { height: 3px; background: #2563eb; border-radius: 4px; transition: width 0.4s ease; }
+
+/* ── Panels ── */
+.panel { padding: 14px 16px; display: none; animation: fadeUp 0.22s ease; }
+.panel.active { display: block; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
+
+/* ── Shared ── */
+.sec-label {
+  font-size: 12px; font-weight: 500; color: #4a5c6e;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 4px;
+}
+.req { color: #e24b4b; font-size: 11px; }
+.tip-box {
+  background: #f0f7ff; border-left: 3px solid #2563eb;
+  border-radius: 0 8px 8px 0; padding: 10px 12px; margin-top: 12px;
+}
+.tip-box p { font-size: 11px; color: #1e40af; line-height: 1.7; }
+.tip-box strong { font-weight: 500; }
+.chip-group { display: flex; gap: 7px; flex-wrap: wrap; }
+.chip {
+  padding: 7px 13px; border-radius: 20px; border: 0.5px solid #d1dae6;
+  background: #f7f9fc; font-size: 12px; color: #4a5c6e; cursor: pointer;
+  transition: all 0.15s; font-family: inherit;
+}
+.chip:hover { border-color: #93b4e0; background: #eff6ff; }
+.chip.sel { border-color: #2563eb; background: #eff6ff; color: #2563eb; font-weight: 500; }
+.grid-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.grid-chip {
+  padding: 8px 10px; border-radius: 8px; border: 0.5px solid #d1dae6;
+  background: #f7f9fc; font-size: 12px; color: #4a5c6e; cursor: pointer;
+  transition: all 0.15s; text-align: left; font-family: inherit;
+  display: flex; align-items: center; gap: 6px;
+}
+.grid-chip:hover { border-color: #93b4e0; background: #eff6ff; }
+.grid-chip.sel { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+.chkbox {
+  width: 14px; height: 14px; border-radius: 4px; border: 1px solid #d1dae6;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 9px; transition: all 0.15s; color: transparent;
+}
+.grid-chip.sel .chkbox { background: #2563eb; border-color: #2563eb; color: #fff; }
+
+/* ── Panel 1: Photo ── */
+.upload-area {
+  border: 1.5px dashed #b8ccdf; border-radius: 12px; padding: 28px 16px;
+  text-align: center; cursor: pointer; background: #f7f9fc;
+  transition: border-color 0.2s, background 0.2s; position: relative;
+}
+.upload-area:hover { border-color: #2563eb; background: #eff6ff; }
+.upload-area input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.upload-icon {
+  width: 50px; height: 50px; border-radius: 14px; background: #e8f0fb;
+  margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.upload-title { font-size: 14px; font-weight: 500; color: #1a2a3a; margin-bottom: 3px; }
+.upload-sub { font-size: 11px; color: #9aaabb; line-height: 1.5; }
+.photo-preview {
+  border-radius: 12px; overflow: hidden; border: 0.5px solid #d1dae6;
+  position: relative; display: none;
+}
+.preview-ph {
+  width: 100%; height: 160px; background: #e8f0fb;
+  display: flex; align-items: center; justify-content: center; font-size: 56px;
+}
+.preview-img { width: 100%; height: 160px; object-fit: cover; display: none; }
+.preview-badge {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(26,138,90,0.9); color: #fff;
+  font-size: 10px; padding: 3px 8px; border-radius: 20px;
+}
+.retake-link { text-align: center; margin-top: 6px; display: none; }
+.retake-link button {
+  font-size: 12px; color: #2563eb; background: none;
+  border: none; cursor: pointer; font-family: inherit; text-decoration: underline;
+}
+.cam-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 10px; border-radius: 10px; border: 0.5px solid #d1dae6;
+  background: #f7f9fc; color: #4a5c6e; font-size: 13px; cursor: pointer;
+  margin-top: 8px; font-family: inherit; transition: background 0.15s;
+}
+.cam-btn:hover { background: #e8edf3; }
+
+/* ── Panel 2: Questionnaire ── */
+.q-block { margin-bottom: 16px; }
+.age-big { text-align: center; margin-bottom: 6px; }
+.age-big span { font-size: 30px; font-weight: 500; color: #2563eb; }
+.age-big small { font-size: 13px; color: #9aaabb; }
+input[type=range] { width: 100%; accent-color: #2563eb; cursor: pointer; }
+.range-ends { display: flex; justify-content: space-between; font-size: 10px; color: #b8ccdf; margin-top: 3px; }
+
+/* ── Panel 3: Kit activation ── */
+.kit-card {
+  border: 0.5px solid #e0e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 12px;
+}
+.kit-card-header {
+  background: #f7f9fc; padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 0.5px solid #e8edf3;
+}
+.kit-card-icon {
+  width: 36px; height: 36px; border-radius: 10px; background: #e8f0fb;
+  display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.kit-card-title { font-size: 13px; font-weight: 500; color: #1a2a3a; margin-bottom: 2px; }
+.kit-card-sub { font-size: 11px; color: #9aaabb; }
+.kit-card-body { padding: 14px; }
+
+.code-field-wrap { position: relative; }
+.code-field {
+  width: 100%; padding: 12px 44px 12px 14px; border-radius: 10px;
+  border: 1px solid #d1dae6; font-size: 15px; letter-spacing: 2px;
+  color: #1a2a3a; font-family: inherit; background: #f7f9fc; outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  text-transform: uppercase;
+}
+.code-field:focus { border-color: #2563eb; background: #fff; }
+.code-field.valid { border-color: #1a8a5a; background: #f0fdf6; }
+.code-field.error { border-color: #e24b4b; background: #fff5f5; }
+.code-field-icon {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 16px; pointer-events: none;
+}
+.code-hint { font-size: 11px; color: #9aaabb; margin-top: 5px; }
+.code-hint.error-msg { color: #e24b4b; }
+.code-hint.success-msg { color: #1a8a5a; }
+
+.activate-btn {
+  width: 100%; margin-top: 10px; padding: 11px; border-radius: 10px;
+  border: none; font-size: 13px; font-weight: 500; cursor: pointer;
+  font-family: inherit; transition: background 0.2s;
+  background: #b8ccdf; color: #fff;
+}
+.activate-btn.ready { background: #2563eb; cursor: pointer; }
+.activate-btn.ready:hover { background: #1d4ed8; }
+
+/* Activated state */
+.kit-activated {
+  display: none; flex-direction: column; gap: 10px;
+}
+.kit-activated.show { display: flex; }
+
+.activated-banner {
+  background: #e6f9f0; border-radius: 10px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.activated-check {
+  width: 34px; height: 34px; border-radius: 50%; background: #1a8a5a;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 16px; flex-shrink: 0;
+}
+.activated-text .t { font-size: 13px; font-weight: 500; color: #1a2a3a; margin-bottom: 2px; }
+.activated-text .s { font-size: 11px; color: #1a8a5a; }
+.activated-change { font-size: 11px; color: #2563eb; cursor: pointer; background: none; border: none; font-family: inherit; }
+
+.lab-card {
+  border: 0.5px solid #e0e8f0; border-radius: 10px; padding: 12px 14px;
+}
+.lab-card-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.lab-card-icon {
+  width: 30px; height: 30px; border-radius: 8px; background: #eff6ff;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.lab-card-title { font-size: 13px; font-weight: 500; color: #1a2a3a; }
+.lab-card-sub { font-size: 11px; color: #9aaabb; }
+.lab-steps { display: flex; flex-direction: column; gap: 7px; }
+.lab-step {
+  display: flex; align-items: center; gap: 8px; font-size: 11px; color: #9aaabb;
+}
+.lab-step.done  { color: #1a8a5a; }
+.lab-step.now   { color: #2563eb; font-weight: 500; }
+.lsdot {
+  width: 7px; height: 7px; border-radius: 50%; background: #d1dae6; flex-shrink: 0;
+}
+.lab-step.done .lsdot { background: #1a8a5a; }
+.lab-step.now  .lsdot { background: #2563eb; animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+/* ── Panel 4: Confirm ── */
+.confirm-head {
+  background: #f7f9fc; border-radius: 10px; padding: 10px 12px;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.confirm-thumb {
+  width: 46px; height: 46px; border-radius: 8px; background: #e8f0fb;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.confirm-head-text .t { font-size: 13px; font-weight: 500; color: #1a2a3a; margin-bottom: 2px; }
+.confirm-head-text .s { font-size: 11px; color: #9aaabb; }
+
+.summary {
+  background: #f7f9fc; border-radius: 10px; padding: 2px 12px; margin-bottom: 12px;
+}
+.sum-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 0.5px solid #e8edf3;
+}
+.sum-row:last-child { border-bottom: none; }
+.sum-row .k { font-size: 12px; color: #9aaabb; }
+.sum-row .v { font-size: 12px; color: #1a2a3a; font-weight: 500; }
+.badge-pending {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: #b45309; background: #fef3c7;
+  border-radius: 20px; padding: 2px 8px;
+}
+.badge-active {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: #1a8a5a; background: #e6f9f0;
+  border-radius: 20px; padding: 2px 8px;
+}
+
+.consent-block { display: flex; flex-direction: column; gap: 6px; }
+.consent-row {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 10px; border-radius: 8px; border: 0.5px solid #e0e8f0; cursor: pointer;
+}
+.consent-row input { margin-top: 1px; accent-color: #2563eb; flex-shrink: 0; }
+.consent-row label { font-size: 11px; color: #6b7f95; line-height: 1.5; cursor: pointer; }
+.consent-row label a { color: #2563eb; text-decoration: none; }
+
+/* ── Panel 5: Analyzing ── */
+.analyzing-wrap { text-align: center; padding: 20px 0 10px; }
+.spin-face {
+  width: 88px; height: 88px; border-radius: 50%; background: #e8f0fb;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px; font-size: 40px; position: relative;
+}
+.spin-face::after {
+  content: ''; position: absolute; inset: -6px; border-radius: 50%;
+  border: 3px solid transparent; border-top-color: #2563eb;
+  animation: spin 1.1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ana-title { font-size: 16px; font-weight: 500; color: #1a2a3a; margin-bottom: 5px; }
+.ana-sub { font-size: 12px; color: #9aaabb; margin-bottom: 18px; }
+.asteps { display: flex; flex-direction: column; gap: 7px; }
+.astep {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-radius: 8px; background: #f7f9fc; font-size: 12px; color: #6b7f95; transition: all 0.3s;
+}
+.astep.done    { background: #e6f9f0; color: #1a8a5a; }
+.astep.running { background: #eff6ff; color: #2563eb; }
+.adot {
+  width: 8px; height: 8px; border-radius: 50%; background: #d1dae6; flex-shrink: 0; transition: background 0.3s;
+}
+.astep.done .adot    { background: #1a8a5a; }
+.astep.running .adot { background: #2563eb; animation: blink 0.8s infinite; }
+
+/* ── Footer ── */
+.footer { padding: 12px 16px; border-top: 0.5px solid #e8edf3; }
+.btn-primary {
+  width: 100%; padding: 12px; border-radius: 10px; border: none;
+  background: #2563eb; color: #fff; font-size: 14px; font-weight: 500;
+  cursor: pointer; font-family: inherit; transition: background 0.2s;
+}
+.btn-primary:hover { background: #1d4ed8; }
+.skip-link {
+  text-align: center; margin-top: 8px;
+}
+.skip-link button {
+  font-size: 11px; color: #9aaabb; background: none; border: none;
+  cursor: pointer; font-family: inherit; text-decoration: underline;
+}
+
+.hint { text-align: center; font-size: 11px; color: #9aaabb; margin: 10px 0 0; }
+</style>
+</head>
+<body>
+<div class="phone-wrap">
+  <div class="card">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="back-btn" onclick="goBack()">‹</div>
+      <span class="topbar-title" id="topbar-title">面部拍照</span>
+      <span class="topbar-step" id="topbar-step">1 / 4</span>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="step-nav">
+      <div class="snav-item">
+        <div class="snav-dot active" id="sd1">1</div>
+        <div class="snav-label active" id="sl1">拍照</div>
+      </div>
+      <div class="snav-line" id="ln1"></div>
+      <div class="snav-item">
+        <div class="snav-dot" id="sd2">2</div>
+        <div class="snav-label" id="sl2">问卷</div>
+      </div>
+      <div class="snav-line" id="ln2"></div>
+      <div class="snav-item">
+        <div class="snav-dot" id="sd3">3</div>
+        <div class="snav-label" id="sl3">采样盒</div>
+      </div>
+      <div class="snav-line" id="ln3"></div>
+      <div class="snav-item">
+        <div class="snav-dot" id="sd4">4</div>
+        <div class="snav-label" id="sl4">确认</div>
+      </div>
+    </div>
+
+    <div class="prog-wrap">
+      <div class="prog-track">
+        <div class="prog-fill" id="prog" style="width:25%;"></div>
+      </div>
+    </div>
+
+    <!-- ══ Step 1: Photo ══ -->
+    <div class="panel active" id="panel-1">
+      <div class="upload-area" id="upload-area" onclick="triggerUpload()">
+        <input type="file" id="file-input" accept="image/*" onchange="handleFile(event)">
+        <div class="upload-icon">📷</div>
+        <p class="upload-title">上传正面照片</p>
+        <p class="upload-sub">请正脸朝向，光线均匀、无遮挡</p>
+      </div>
+      <div class="photo-preview" id="photo-preview">
+        <div class="preview-ph" id="preview-ph">🧑</div>
+        <img class="preview-img" id="preview-img" src="" alt="">
+        <span class="preview-badge">✓ 已上传</span>
+      </div>
+      <div class="retake-link" id="retake-link">
+        <button onclick="resetPhoto()">重新选择照片</button>
+      </div>
+      <button class="cam-btn" onclick="simulatePhoto()">
+        <span style="font-size:15px;">📸</span> 使用摄像头实时拍摄
+      </button>
+      <div class="tip-box">
+        <p><strong>拍摄建议：</strong><br>
+        · 正脸朝向镜头，保持自然表情<br>
+        · 选择自然光或均匀灯光环境<br>
+        · 去除口罩、墨镜等遮挡物</p>
+      </div>
+    </div>
+
+    <!-- ══ Step 2: Questionnaire ══ -->
+    <div class="panel" id="panel-2">
+      <div class="q-block">
+        <p class="sec-label">实际年龄 <span class="req">*</span></p>
+        <div class="age-big"><span id="age-val">35</span><small> 岁</small></div>
+        <input type="range" min="18" max="80" value="35"
+          oninput="document.getElementById('age-val').textContent=this.value">
+        <div class="range-ends"><span>18 岁</span><span>80 岁</span></div>
+      </div>
+      <div class="q-block">
+        <p class="sec-label">性别 <span class="req">*</span></p>
+        <div class="chip-group">
+          <button class="chip sel" onclick="selChip(this,'gender')">女</button>
+          <button class="chip" onclick="selChip(this,'gender')">男</button>
+          <button class="chip" onclick="selChip(this,'gender')">不便透露</button>
+        </div>
+      </div>
+      <div class="q-block">
+        <p class="sec-label">皮肤类型</p>
+        <div class="chip-group">
+          <button class="chip sel" onclick="selChip(this,'skin')">混合肌</button>
+          <button class="chip" onclick="selChip(this,'skin')">干性肌</button>
+          <button class="chip" onclick="selChip(this,'skin')">油性肌</button>
+          <button class="chip" onclick="selChip(this,'skin')">敏感肌</button>
+        </div>
+      </div>
+      <div class="q-block">
+        <p class="sec-label">生活习惯（可多选）</p>
+        <div class="grid-chips">
+          <button class="grid-chip sel" onclick="togChip(this)"><span class="chkbox">✓</span>规律睡眠</button>
+          <button class="grid-chip" onclick="togChip(this)"><span class="chkbox"></span>每日防晒</button>
+          <button class="grid-chip" onclick="togChip(this)"><span class="chkbox"></span>吸烟</button>
+          <button class="grid-chip" onclick="togChip(this)"><span class="chkbox"></span>饮酒</button>
+          <button class="grid-chip sel" onclick="togChip(this)"><span class="chkbox">✓</span>定期运动</button>
+          <button class="grid-chip" onclick="togChip(this)"><span class="chkbox"></span>高压工作</button>
+        </div>
+      </div>
+      <div class="q-block" style="margin-bottom:0;">
+        <p class="sec-label">皮肤困扰（可多选）</p>
+        <div class="grid-chips">
+          <button class="grid-chip sel" onclick="togChip(this)"><span class="chkbox">✓</span>色斑暗沉</button>
+          <button class="grid-chip" onclick="togChip(this)"><span class="chkbox"></span>细纹松弛</button>
+          <button class="grid-chip" onclick="togChip(this)"><span class="chkbox"></span>毛孔粗大</button>
+          <button class="grid-chip" onclick="togChip(this)"><span class="chkbox"></span>干燥缺水</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Step 3: Kit activation ══ -->
+    <div class="panel" id="panel-3">
+
+      <!-- Input form (before activation) -->
+      <div id="kit-form">
+        <div class="kit-card">
+          <div class="kit-card-header">
+            <div class="kit-card-icon">📦</div>
+            <div>
+              <p class="kit-card-title">激活采样盒</p>
+              <p class="kit-card-sub">输入盒上的 8 位编号完成绑定</p>
+            </div>
+          </div>
+          <div class="kit-card-body">
+            <!-- Visual: kit box diagram -->
+            <div style="background:#f0f7ff; border-radius:10px; padding:14px; margin-bottom:14px; display:flex; align-items:center; gap:12px;">
+              <div style="flex-shrink:0;">
+                <!-- Simple kit box illustration -->
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="8" y="20" width="48" height="36" rx="4" fill="#dbeafe" stroke="#93c5fd" stroke-width="1"/>
+                  <rect x="8" y="14" width="48" height="10" rx="3" fill="#bfdbfe" stroke="#93c5fd" stroke-width="1"/>
+                  <rect x="24" y="14" width="16" height="10" rx="2" fill="#93c5fd"/>
+                  <rect x="22" y="32" width="20" height="12" rx="3" fill="#fff" stroke="#93c5fd" stroke-width="0.5"/>
+                  <text x="32" y="41" text-anchor="middle" font-size="7" fill="#2563eb" font-family="monospace">AG-XXXX</text>
+                  <circle cx="32" cy="52" r="3" fill="#93c5fd"/>
+                </svg>
+              </div>
+              <div>
+                <p style="font-size:12px; font-weight:500; color:#1e40af; margin-bottom:3px;">编号位置</p>
+                <p style="font-size:11px; color:#3b82f6; line-height:1.6;">编号印于采样盒<strong>正面标签</strong>中央，格式为 <span style="font-family:monospace; background:#fff; padding:1px 5px; border-radius:4px; color:#2563eb;">AG-</span> 开头的 8 位字符</p>
+              </div>
+            </div>
+
+            <p class="sec-label">采样盒编号 <span class="req">*</span></p>
+            <div class="code-field-wrap">
+              <input class="code-field" id="code-input" type="text" maxlength="11"
+                placeholder="AG-XXXXXXXX"
+                oninput="onCodeInput(this)">
+              <span class="code-field-icon" id="code-icon"></span>
+            </div>
+            <p class="code-hint" id="code-hint">输入后将自动补全「AG-」前缀</p>
+            <button class="activate-btn" id="activate-btn" disabled onclick="activateKit()">确认激活</button>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <p><strong>采样说明：</strong><br>
+          · 激活后请按说明书刮取口腔内壁细胞<br>
+          · 采样前 30 分钟避免饮食、漱口<br>
+          · 密封样本后寄回附带的回收信封</p>
+        </div>
+      </div>
+
+      <!-- After activation -->
+      <div class="kit-activated" id="kit-activated">
+        <div class="activated-banner">
+          <div class="activated-check">✓</div>
+          <div style="flex:1;">
+            <div class="activated-text">
+              <p class="t">采样盒已激活</p>
+              <p class="s" id="activated-code-display">编号：AG-20250314 · 唾液采样盒</p>
+            </div>
+          </div>
+          <button class="activated-change" onclick="resetKit()">重新输入</button>
+        </div>
+
+        <div class="lab-card">
+          <div class="lab-card-header">
+            <div class="lab-card-icon">🧬</div>
+            <div>
+              <p class="lab-card-title">基因检测进度</p>
+              <p class="lab-card-sub">预计 7–10 个工作日出结果</p>
+            </div>
+          </div>
+          <div class="lab-steps">
+            <div class="lab-step done"><div class="lsdot"></div>采样盒已登记</div>
+            <div class="lab-step now"><div class="lsdot"></div>等待寄回实验室</div>
+            <div class="lab-step"><div class="lsdot"></div>实验室收样检测</div>
+            <div class="lab-step"><div class="lsdot"></div>基因衰老报告生成</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ Step 4: Confirm ══ -->
+    <div class="panel" id="panel-4">
+      <div class="confirm-head">
+        <div class="confirm-thumb">🧑</div>
+        <div class="confirm-head-text">
+          <p class="t">采样信息确认</p>
+          <p class="s">确认无误后提交，AI 将立即开始分析</p>
+        </div>
+      </div>
+
+      <div class="summary">
+        <div class="sum-row"><span class="k">实际年龄</span><span class="v" id="sum-age">35 岁</span></div>
+        <div class="sum-row"><span class="k">性别</span><span class="v">女</span></div>
+        <div class="sum-row"><span class="k">皮肤类型</span><span class="v">混合肌</span></div>
+        <div class="sum-row"><span class="k">生活习惯</span><span class="v">规律睡眠、定期运动</span></div>
+        <div class="sum-row"><span class="k">皮肤困扰</span><span class="v">色斑暗沉</span></div>
+        <div class="sum-row">
+          <span class="k">采样盒</span>
+          <span class="v" id="sum-kit">
+            <span class="badge-pending">
+              <span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>
+              未激活（可跳过）
+            </span>
+          </span>
+        </div>
+      </div>
+
+      <p style="font-size:12px;font-weight:500;color:#4a5c6e;margin-bottom:8px;">授权与隐私</p>
+      <div class="consent-block">
+        <div class="consent-row">
+          <input type="checkbox" id="c1" checked>
+          <label for="c1">同意将照片及问卷数据用于 AI 分析，数据仅用于本次检测。<a href="#">隐私政策</a></label>
+        </div>
+        <div class="consent-row">
+          <input type="checkbox" id="c2" checked>
+          <label for="c2">同意将采样盒生物样本用于基因衰老检测分析。</label>
+        </div>
+        <div class="consent-row">
+          <input type="checkbox" id="c3">
+          <label for="c3">同意将匿名数据用于模型优化（可选）</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Step 5: Analyzing ══ -->
+    <div class="panel" id="panel-5">
+      <div class="analyzing-wrap">
+        <div class="spin-face">🧑</div>
+        <p class="ana-title">AI 正在分析中</p>
+        <p class="ana-sub">请稍候，通常需要 10–20 秒</p>
+        <div class="asteps">
+          <div class="astep" id="as1"><div class="adot"></div>图像质量检测</div>
+          <div class="astep" id="as2"><div class="adot"></div>面部特征提取</div>
+          <div class="astep" id="as3"><div class="adot"></div>中医体质分析</div>
+          <div class="astep" id="as4"><div class="adot"></div>西医皮肤老化评估</div>
+          <div class="astep" id="as5"><div class="adot"></div>生成个性化报告</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer" id="footer">
+      <button class="btn-primary" id="next-btn" onclick="nextStep()">下一步</button>
+      <div class="skip-link" id="skip-wrap" style="display:none;">
+        <button onclick="skipKit()">暂时跳过，稍后再激活采样盒</button>
+      </div>
+    </div>
+
+  </div>
+  <p class="hint" id="bottom-hint">步骤 1：上传您的正面照片</p>
+</div>
+
+<script>
+var step = 1;
+var hasPhoto = false;
+var kitActivated = false;
+var aTimer = null;
+
+var META = {
+  1: { title:'面部拍照',   ss:'1 / 4', hint:'步骤 1：上传您的正面照片',    btn:'下一步', skip:false },
+  2: { title:'健康问卷',   ss:'2 / 4', hint:'步骤 2：填写基本健康信息',    btn:'下一步', skip:false },
+  3: { title:'激活采样盒', ss:'3 / 4', hint:'步骤 3：输入采样盒编号激活',  btn:'下一步', skip:true  },
+  4: { title:'确认提交',   ss:'4 / 4', hint:'步骤 4：确认信息后提交',      btn:'提交采样', skip:false },
+  5: { title:'分析中',     ss:'',      hint:'',                            btn:'', skip:false }
+};
+
+function updateUI() {
+  var m = META[step];
+  document.getElementById('topbar-title').textContent = m.title;
+  document.getElementById('topbar-step').textContent = m.ss;
+  document.getElementById('bottom-hint').textContent = m.hint;
+  document.getElementById('next-btn').textContent = m.btn;
+  document.getElementById('skip-wrap').style.display = m.skip ? 'block' : 'none';
+
+  var pct = (step / 4) * 100;
+  document.getElementById('prog').style.width = Math.min(pct, 100) + '%';
+
+  for (var i = 1; i <= 4; i++) {
+    var dot = document.getElementById('sd' + i);
+    var lbl = document.getElementById('sl' + i);
+    dot.className = 'snav-dot' + (i < step ? ' done' : i === step ? ' active' : '');
+    dot.textContent = i < step ? '✓' : i;
+    lbl.className = 'snav-label' + (i < step ? ' done' : i === step ? ' active' : '');
+    if (i < 4) {
+      document.getElementById('ln' + i).className = 'snav-line' + (i < step ? ' done' : '');
+    }
+  }
+
+  var hide5 = (step === 5);
+  document.querySelector('.step-nav').style.display = hide5 ? 'none' : '';
+  document.querySelector('.prog-wrap').style.display = hide5 ? 'none' : '';
+  document.getElementById('footer').style.display = hide5 ? 'none' : '';
+}
+
+function nextStep() {
+  if (step === 1 && !hasPhoto) { simulatePhoto(); return; }
+  if (step === 4) {
+    document.getElementById('sum-age').textContent = document.getElementById('age-val').textContent + ' 岁';
+    updateSumKit();
+  }
+  goToStep(step + 1);
+}
+
+function goToStep(s) {
+  document.getElementById('panel-' + step).classList.remove('active');
+  step = s;
+  document.getElementById('panel-' + step).classList.add('active');
+  updateUI();
+  if (step === 5) startAnalyze();
+}
+
+function goBack() {
+  if (step <= 1) return;
+  if (aTimer) clearTimeout(aTimer);
+  document.getElementById('panel-' + step).classList.remove('active');
+  step--;
+  document.getElementById('panel-' + step).classList.add('active');
+  updateUI();
+}
+
+function skipKit() { goToStep(4); }
+
+/* ── Photo ── */
+function triggerUpload() { document.getElementById('file-input').click(); }
+function handleFile(e) {
+  var f = e.target.files[0];
+  if (!f) return;
+  var r = new FileReader();
+  r.onload = function(ev) { showPhoto(ev.target.result); };
+  r.readAsDataURL(f);
+}
+function showPhoto(src) {
+  hasPhoto = true;
+  document.getElementById('upload-area').style.display = 'none';
+  document.getElementById('photo-preview').style.display = 'block';
+  document.getElementById('retake-link').style.display = 'block';
+  if (src) {
+    document.getElementById('preview-ph').style.display = 'none';
+    document.getElementById('preview-img').src = src;
+    document.getElementById('preview-img').style.display = 'block';
+  }
+}
+function simulatePhoto() { showPhoto(''); nextStep(); }
+function resetPhoto() {
+  hasPhoto = false;
+  document.getElementById('upload-area').style.display = '';
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('retake-link').style.display = 'none';
+  document.getElementById('file-input').value = '';
+}
+
+/* ── Questionnaire ── */
+function selChip(el, g) {
+  el.closest('.chip-group').querySelectorAll('.chip').forEach(function(c) { c.classList.remove('sel'); });
+  el.classList.add('sel');
+}
+function togChip(el) {
+  el.classList.toggle('sel');
+  el.querySelector('.chkbox').textContent = el.classList.contains('sel') ? '✓' : '';
+}
+
+/* ── Kit ── */
+function onCodeInput(el) {
+  var raw = el.value.replace(/[^A-Za-z0-9\-]/g, '').toUpperCase();
+  // Auto-prepend AG- if user just types digits/letters
+  if (raw.length > 0 && !raw.startsWith('AG-')) {
+    raw = 'AG-' + raw.replace(/^AG-?/i, '');
+  }
+  el.value = raw;
+
+  var code = raw.replace('AG-', '');
+  var btn = document.getElementById('activate-btn');
+  var hint = document.getElementById('code-hint');
+  var icon = document.getElementById('code-icon');
+
+  if (code.length === 0) {
+    el.className = 'code-field';
+    icon.textContent = '';
+    hint.textContent = '输入后将自动补全「AG-」前缀';
+    hint.className = 'code-hint';
+    btn.disabled = true; btn.className = 'activate-btn';
+  } else if (code.length < 8) {
+    el.className = 'code-field';
+    icon.textContent = '';
+    hint.textContent = '还需输入 ' + (8 - code.length) + ' 位';
+    hint.className = 'code-hint';
+    btn.disabled = true; btn.className = 'activate-btn';
+  } else {
+    el.className = 'code-field valid';
+    icon.textContent = '✓';
+    hint.textContent = '编号格式正确';
+    hint.className = 'code-hint success-msg';
+    btn.disabled = false; btn.className = 'activate-btn ready';
+  }
+}
+
+function activateKit() {
+  var val = document.getElementById('code-input').value;
+  kitActivated = true;
+  document.getElementById('activated-code-display').textContent = '编号：' + val + ' · 唾液采样盒';
+  document.getElementById('kit-form').style.display = 'none';
+  document.getElementById('kit-activated').classList.add('show');
+  document.getElementById('skip-wrap').style.display = 'none';
+}
+
+function resetKit() {
+  kitActivated = false;
+  document.getElementById('kit-form').style.display = '';
+  document.getElementById('kit-activated').classList.remove('show');
+  document.getElementById('code-input').value = '';
+  document.getElementById('code-input').className = 'code-field';
+  document.getElementById('code-icon').textContent = '';
+  document.getElementById('code-hint').textContent = '输入后将自动补全「AG-」前缀';
+  document.getElementById('code-hint').className = 'code-hint';
+  var btn = document.getElementById('activate-btn');
+  btn.disabled = true; btn.className = 'activate-btn';
+  document.getElementById('skip-wrap').style.display = 'block';
+}
+
+function updateSumKit() {
+  var el = document.getElementById('sum-kit');
+  if (kitActivated) {
+    var val = document.getElementById('code-input').value;
+    el.innerHTML = '<span class="badge-active"><span style="width:6px;height:6px;border-radius:50%;background:#1a8a5a;display:inline-block;"></span>' + val + '</span>';
+  } else {
+    el.innerHTML = '<span class="badge-pending"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>未激活（可跳过）</span>';
+  }
+}
+
+/* ── Analyze ── */
+function startAnalyze() {
+  var ids = ['as1','as2','as3','as4','as5'];
+  ids.forEach(function(id) { document.getElementById(id).className = 'astep'; });
+  document.getElementById('as1').className = 'astep running';
+  var delays = [0, 1800, 3600, 5600, 7800];
+  delays.forEach(function(d, i) {
+    aTimer = setTimeout(function() {
+      if (i > 0) document.getElementById(ids[i-1]).className = 'astep done';
+      document.getElementById(ids[i]).className = 'astep running';
+      if (i === ids.length - 1) {
+        setTimeout(function() {
+          document.getElementById(ids[i]).className = 'astep done';
+          setTimeout(showDone, 500);
+        }, 1800);
+      }
+    }, d);
+  });
+}
+function showDone() {
+  document.getElementById('panel-5').innerHTML =
+    '<div class="analyzing-wrap">' +
+    '<div style="width:76px;height:76px;border-radius:50%;background:#e6f9f0;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:34px;">✓</div>' +
+    '<p class="ana-title" style="color:#1a8a5a;">分析完成！</p>' +
+    '<p class="ana-sub">正在跳转至您的检测报告…</p>' +
+    '</div>';
+}
+
+updateUI();
+</script>
+</body>
+</html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>衰老检测 · 分析报告</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #f0f4f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+  .phone-wrap {
+    width: 390px;
+    background: #f0f4f8;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+  }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 0.5px solid #d1dae6;
+  }
+  /* Header */
+  .header {
+    padding: 16px;
+    border-bottom: 0.5px solid #e8edf3;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .avatar {
+    width: 56px; height: 56px;
+    border-radius: 10px;
+    background: #e8f0fb;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; flex-shrink: 0;
+  }
+  .header-info { flex: 1; }
+  .header-label {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+  }
+  .header-label span { font-size: 13px; color: #6b7f95; }
+  .badge-good {
+    font-size: 11px; background: #e6f9f0; color: #1a8a5a;
+    border-radius: 20px; padding: 1px 8px;
+  }
+  .age-row { display: flex; align-items: baseline; gap: 6px; }
+  .age-num { font-size: 34px; font-weight: 500; color: #1a2a3a; line-height: 1; }
+  .age-unit { font-size: 13px; color: #6b7f95; }
+  .age-diff { font-size: 12px; color: #1a8a5a; margin-left: 2px; }
+  .header-score { text-align: right; }
+  .header-score p { font-size: 10px; color: #9aaabb; margin-bottom: 2px; }
+  .header-score span { font-size: 28px; font-weight: 500; color: #2563eb; }
+  /* Tabs */
+  .tabs {
+    display: flex;
+    background: #f7f9fc;
+    border-bottom: 0.5px solid #e0e8f0;
+  }
+  .tab-btn {
+    flex: 1; padding: 10px 0; font-size: 12px;
+    border: none; cursor: pointer; background: transparent;
+    color: #9aaabb; border-bottom: 2px solid transparent;
+    font-weight: 400; transition: color 0.2s;
+    font-family: inherit;
+  }
+  .tab-btn.active {
+    color: #2563eb; border-bottom: 2px solid #2563eb; font-weight: 500;
+  }
+  /* Panels */
+  .panel { padding: 16px; display: none; }
+  .panel.active { display: block; }
+  /* Radar */
+  .score-cards {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px;
+  }
+  .score-card {
+    background: #f7f9fc; border-radius: 8px; padding: 8px; text-align: center;
+  }
+  .score-card p { font-size: 10px; color: #9aaabb; margin-bottom: 2px; }
+  .score-card span { font-size: 16px; font-weight: 500; }
+  /* TCM grid */
+  .tcm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .tcm-item {
+    border: 0.5px solid #e0e8f0; border-radius: 10px; padding: 10px;
+  }
+  .tcm-item .label { font-size: 10px; color: #9aaabb; margin-bottom: 4px; }
+  .tcm-item .val-row { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .tcm-item .val { font-size: 13px; font-weight: 500; color: #1a2a3a; }
+  .tcm-item .sub { font-size: 10px; }
+  /* Info box */
+  .info-box {
+    background: #f0f7ff; border-left: 3px solid #2563eb;
+    border-radius: 0 8px 8px 0; padding: 10px 12px;
+  }
+  .info-box .title { font-size: 12px; font-weight: 500; color: #1e40af; margin-bottom: 3px; }
+  .info-box .body { font-size: 12px; color: #1e40af; line-height: 1.6; }
+  /* Progress bars */
+  .prog-row { margin-bottom: 12px; }
+  .prog-row:last-child { margin-bottom: 0; }
+  .prog-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .prog-header span { font-size: 12px; color: #4a5c6e; }
+  .prog-header .val { font-weight: 500; }
+  .prog-track { height: 5px; background: #e8edf3; border-radius: 4px; }
+  .prog-fill { height: 5px; border-radius: 4px; }
+  /* Plan items */
+  .plan-list { display: flex; flex-direction: column; gap: 8px; }
+  .plan-item {
+    border: 0.5px solid #e0e8f0; border-radius: 10px; padding: 10px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .plan-icon {
+    width: 32px; height: 32px; min-width: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .plan-text .title { font-size: 13px; font-weight: 500; color: #1a2a3a; margin-bottom: 2px; }
+  .plan-text .desc { font-size: 11px; color: #6b7f95; line-height: 1.5; }
+  .plan-tag {
+    margin-left: auto; font-size: 10px; border-radius: 20px;
+    padding: 2px 7px; flex-shrink: 0; align-self: center;
+  }
+  .tag-tcm { background: #e6f9f0; color: #1a8a5a; }
+  .tag-west { background: #eff6ff; color: #2563eb; }
+  .btn-primary {
+    width: 100%; margin-top: 12px; padding: 11px;
+    border-radius: 8px; font-size: 13px; cursor: pointer;
+    background: #2563eb; color: #fff; border: none;
+    font-family: inherit; font-weight: 500;
+    transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #1d4ed8; }
+  /* Footer */
+  .footer {
+    padding: 12px 14px; border-top: 0.5px solid #e8edf3;
+    display: flex; gap: 8px;
+  }
+  .btn-secondary {
+    flex: 1; padding: 9px; border-radius: 8px; font-size: 12px;
+    cursor: pointer; background: #f7f9fc; border: 0.5px solid #d1dae6;
+    color: #4a5c6e; font-family: inherit;
+    transition: background 0.2s;
+  }
+  .btn-secondary:hover { background: #e8edf3; }
+  .hint { text-align: center; font-size: 11px; color: #9aaabb; margin: 10px 0 0; }
+</style>
+</head>
+<body>
+<div class="phone-wrap">
+  <div class="card">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="avatar">🧑</div>
+      <div class="header-info">
+        <div class="header-label">
+          <span>生理年龄</span>
+          <span class="badge-good">优秀</span>
+        </div>
+        <div class="age-row">
+          <span class="age-num">38</span>
+          <span class="age-unit">岁</span>
+          <span class="age-diff">比实际年轻 7 岁</span>
+        </div>
+      </div>
+      <div class="header-score">
+        <p>综合评分</p>
+        <span>75</span>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('radar')">雷达评分</button>
+      <button class="tab-btn" onclick="switchTab('tcm')">中医</button>
+      <button class="tab-btn" onclick="switchTab('west')">西医</button>
+      <button class="tab-btn" onclick="switchTab('plan')">改善方案</button>
+    </div>
+
+    <!-- Radar Panel -->
+    <div class="panel active" id="panel-radar">
+      <svg viewBox="0 0 280 220" style="width:100%; display:block;">
+        <g transform="translate(140,110)">
+          <polygon points="0,-80 69,-40 69,40 0,80 -69,40 -69,-40" fill="none" stroke="#e8edf3" stroke-width="1"/>
+          <polygon points="0,-60 52,-30 52,30 0,60 -52,30 -52,-30" fill="none" stroke="#e8edf3" stroke-width="1"/>
+          <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20" fill="none" stroke="#e8edf3" stroke-width="1"/>
+          <polygon points="0,-20 17,-10 17,10 0,20 -17,10 -17,-10" fill="none" stroke="#e8edf3" stroke-width="1"/>
+          <line x1="0" y1="0" x2="0" y2="-80" stroke="#d1dae6" stroke-width="0.5"/>
+          <line x1="0" y1="0" x2="69" y2="-40" stroke="#d1dae6" stroke-width="0.5"/>
+          <line x1="0" y1="0" x2="69" y2="40" stroke="#d1dae6" stroke-width="0.5"/>
+          <line x1="0" y1="0" x2="0" y2="80" stroke="#d1dae6" stroke-width="0.5"/>
+          <line x1="0" y1="0" x2="-69" y2="40" stroke="#d1dae6" stroke-width="0.5"/>
+          <line x1="0" y1="0" x2="-69" y2="-40" stroke="#d1dae6" stroke-width="0.5"/>
+          <polygon points="0,-62.4 53.6,-31.2 44.8,32 0,65.6 -30.25,27.5 -51.75,-30"
+            fill="rgba(37,99,235,0.10)" stroke="#2563eb" stroke-width="1.5" stroke-linejoin="round"/>
+          <circle cx="0" cy="-62.4" r="3.5" fill="#2563eb"/>
+          <circle cx="53.6" cy="-31.2" r="3.5" fill="#2563eb"/>
+          <circle cx="44.8" cy="32" r="3.5" fill="#2563eb"/>
+          <circle cx="0" cy="65.6" r="3.5" fill="#2563eb"/>
+          <circle cx="-30.25" cy="27.5" r="3.5" fill="#2563eb"/>
+          <circle cx="-51.75" cy="-30" r="3.5" fill="#2563eb"/>
+          <text x="0" y="-88" text-anchor="middle" font-size="11" fill="#1a2a3a">皮肤弹性</text>
+          <text x="78" y="-38" text-anchor="start" font-size="11" fill="#1a2a3a">色斑</text>
+          <text x="78" y="46" text-anchor="start" font-size="11" fill="#1a2a3a">细纹</text>
+          <text x="0" y="98" text-anchor="middle" font-size="11" fill="#1a2a3a">含水量</text>
+          <text x="-78" y="46" text-anchor="end" font-size="11" fill="#1a2a3a">毛孔</text>
+          <text x="-78" y="-38" text-anchor="end" font-size="11" fill="#1a2a3a">面色</text>
+          <text x="0" y="-66" text-anchor="middle" font-size="9" fill="#2563eb">78</text>
+          <text x="56" y="-34" text-anchor="start" font-size="9" fill="#2563eb">62</text>
+          <text x="47" y="44" text-anchor="start" font-size="9" fill="#2563eb">70</text>
+          <text x="0" y="78" text-anchor="middle" font-size="9" fill="#2563eb">82</text>
+          <text x="-33" y="40" text-anchor="end" font-size="9" fill="#2563eb">55</text>
+          <text x="-54" y="-26" text-anchor="end" font-size="9" fill="#2563eb">75</text>
+        </g>
+      </svg>
+      <div class="score-cards">
+        <div class="score-card"><p>皮肤弹性</p><span style="color:#1a8a5a;">78</span></div>
+        <div class="score-card"><p>色斑</p><span style="color:#c05a0a;">62</span></div>
+        <div class="score-card"><p>含水量</p><span style="color:#1a8a5a;">82</span></div>
+      </div>
+    </div>
+
+    <!-- TCM Panel -->
+    <div class="panel" id="panel-tcm">
+      <div class="tcm-grid">
+        <div class="tcm-item">
+          <p class="label">舌苔</p>
+          <div class="val-row"><div class="dot" style="background:#facc15;"></div><span class="val">薄黄苔</span></div>
+          <p class="sub" style="color:#b45309;">轻度内热</p>
+        </div>
+        <div class="tcm-item">
+          <p class="label">面色</p>
+          <div class="val-row"><div class="dot" style="background:#fca5a5;"></div><span class="val">红润偏暗</span></div>
+          <p class="sub" style="color:#7c3aed;">气血略滞</p>
+        </div>
+        <div class="tcm-item">
+          <p class="label">眼神</p>
+          <div class="val-row"><div class="dot" style="background:#86efac;"></div><span class="val">神采奕奕</span></div>
+          <p class="sub" style="color:#15803d;">肝肾充足</p>
+        </div>
+        <div class="tcm-item">
+          <p class="label">肤质</p>
+          <div class="val-row"><div class="dot" style="background:#93c5fd;"></div><span class="val">细腻偏干</span></div>
+          <p class="sub" style="color:#1d4ed8;">津液稍亏</p>
+        </div>
+      </div>
+      <div class="info-box">
+        <p class="title">体质判断</p>
+        <p class="body">阴虚内热体质为主，兼有气滞。建议滋阴清热、疏肝理气。</p>
+      </div>
+    </div>
+
+    <!-- West Panel -->
+    <div class="panel" id="panel-west">
+      <div class="prog-row">
+        <div class="prog-header"><span>皮肤弹性</span><span class="val" style="color:#1a8a5a;">78 / 100</span></div>
+        <div class="prog-track"><div class="prog-fill" style="width:78%; background:#22c55e;"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-header"><span>色斑指数</span><span class="val" style="color:#c05a0a;">62 / 100</span></div>
+        <div class="prog-track"><div class="prog-fill" style="width:62%; background:#f59e0b;"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-header"><span>细纹深度</span><span class="val" style="color:#1a8a5a;">70 / 100</span></div>
+        <div class="prog-track"><div class="prog-fill" style="width:70%; background:#22c55e;"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-header"><span>含水量</span><span class="val" style="color:#1a8a5a;">82 / 100</span></div>
+        <div class="prog-track"><div class="prog-fill" style="width:82%; background:#22c55e;"></div></div>
+      </div>
+      <div class="prog-row" style="margin-bottom:14px;">
+        <div class="prog-header"><span>毛孔粗细</span><span class="val" style="color:#c05a0a;">55 / 100</span></div>
+        <div class="prog-track"><div class="prog-fill" style="width:55%; background:#f59e0b;"></div></div>
+      </div>
+      <div class="info-box">
+        <p class="title">皮肤科建议</p>
+        <p class="body">色斑及毛孔需重点关注，建议加强防晒并咨询皮肤科医师。</p>
+      </div>
+    </div>
+
+    <!-- Plan Panel -->
+    <div class="panel" id="panel-plan">
+      <div class="plan-list">
+        <div class="plan-item">
+          <div class="plan-icon" style="background:#fef9ec;">🌿</div>
+          <div class="plan-text">
+            <p class="title">滋阴食疗</p>
+            <p class="desc">多食银耳、百合、枸杞，减少辛辣刺激</p>
+          </div>
+          <span class="plan-tag tag-tcm">中医</span>
+        </div>
+        <div class="plan-item">
+          <div class="plan-icon" style="background:#eff6ff;">🛡️</div>
+          <div class="plan-text">
+            <p class="title">加强防晒</p>
+            <p class="desc">每日 SPF50+ 防晒霜，重点改善色斑问题</p>
+          </div>
+          <span class="plan-tag tag-west">西医</span>
+        </div>
+        <div class="plan-item">
+          <div class="plan-icon" style="background:#f0fdf4;">🧘</div>
+          <div class="plan-text">
+            <p class="title">疏肝理气</p>
+            <p class="desc">每日八段锦或太极，保持情绪舒畅</p>
+          </div>
+          <span class="plan-tag tag-tcm">中医</span>
+        </div>
+        <div class="plan-item">
+          <div class="plan-icon" style="background:#eff6ff;">💊</div>
+          <div class="plan-text">
+            <p class="title">补充维生素 C / E</p>
+            <p class="desc">抗氧化，辅助改善色斑与毛孔粗大</p>
+          </div>
+          <span class="plan-tag tag-west">西医</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <button class="btn-secondary">重新拍照</button>
+      <button class="btn-secondary">生成报告</button>
+    </div>
+  </div>
+  <p class="hint">点击标签页切换分析视角</p>
+</div>
+
+<script>
+function switchTab(id) {
+  ['radar','tcm','west','plan'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('active', t === id);
+    document.querySelectorAll('.tab-btn')[['radar','tcm','west','plan'].indexOf(t)]
+      .classList.toggle('active', t === id);
+  });
+}
+</script>
+</body>
+</html>

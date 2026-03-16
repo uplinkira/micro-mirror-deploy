@@ -2,9 +2,6 @@
 
 This repository preserves the released snapshot of `Micro Mirror` from the Shenzhen hackathon build on `March 14, 2026`.
 
-The long-term product continuation now lives in:
-- `https://github.com/uplinkira/vitalscope.git`
-
 ## Snapshot Identity
 
 - Snapshot date:
@@ -18,10 +15,16 @@ The long-term product continuation now lives in:
 
 ## Team At The Time Of The Snapshot
 
-- `uplinkira`
-- `2` collaborating bioinformatics graduate researchers from the Chinese Academy of Sciences
+The use case framing and the solution flow preserved in this snapshot were distilled collaboratively from the team's shared daily observations and discussion.
+本快照中保留的使用场景定义与解决方案流程，是团队基于日常观察与讨论共同提炼出来的。
 
-This repository records the team composition for the hackathon snapshot only. The long-term continuation repository is maintained as a solo project by `uplinkira`.
+- [`Xena016`](https://github.com/Xena016) and [`Sheryl0907`](https://github.com/Sheryl0907) both came from bioinformatics backgrounds and contributed grounded architecture thinking about the practical feasibility of the medical testing approaches discussed in the concept.
+
+- [`uplinkira`](https://github.com/uplinkira) contributed from an applied interaction design perspective, effectively acting as the user in the loop to test accessibility and commercial potential across the flow.
+
+- For prototype implementation, `uplinkira` analyzed and applied the organizer-provided [`GOAT Network AgentKit`](https://github.com/GOATNetwork/agentkit) to produce the website landing page and payment interface prototype.
+
+- `Xena016` and `Sheryl0907` produced the mobile-side prototype for the personal information input flow and the report output flow.
 
 ## Event Context
 
@@ -32,9 +35,7 @@ Based on the public event page, the sprint was hosted by `Sophia Li`, `GOAT Netw
 
 ## Competition Result
 
-- according to team records, `Micro Mirror` received `General Track First Place`
-- the public event page confirms the event context, but no separate public award page was located during this documentation pass
-- for that reason, the award wording here is intentionally preserved as a team record rather than as an externally verified public claim
+- `Micro Mirror Demo` received `General Track First Place`!
 
 ## What This Snapshot Preserves
 
@@ -90,7 +91,7 @@ This repository should be read as:
 ## Local Run
 
 ```bash
-cd D+20260314+goat/micro-mirror-deploy
+cd micro-mirror-deploy
 python3 -m http.server 8000
 ```
 
