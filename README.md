@@ -78,11 +78,6 @@ The upgrade path added smart ring signals such as:
 
 ## Repository Role
 
-- Long-term main product repository:
-  - `https://github.com/uplinkira/vitalscope.git`
-- This snapshot repository:
-  - `https://github.com/uplinkira/micro-mirror-deploy.git`
-
 This repository should be read as:
 - a deployed snapshot
 - a hackathon archive
